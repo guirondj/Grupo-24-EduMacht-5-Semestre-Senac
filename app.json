@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "Edu Match",
+    "slug": "edu-match",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": null,
+    "scheme": "edumatch",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#6C63FF"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.senac.edumatch"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#6C63FF"
+      },
+      "package": "com.senac.edumatch"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": null
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O Edu Match precisa acessar suas fotos para definir a foto de perfil."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

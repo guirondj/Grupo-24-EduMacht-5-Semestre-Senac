@@ -1,0 +1,90 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return request.auth.uid == uid;
+    }
+
+    function isParticipant(resource) {
+      return request.auth.uid in resource.data.participantIds;
+    }
+
+    // Users: anyone authenticated can read; only owner can write
+    match /users/{uid} {
+      allow read: if isAuth();
+      allow create: if isAuth() && isOwner(uid);
+      allow update: if isAuth() && isOwner(uid);
+      allow delete: if false;
+    }
+
+    // Matches: apprentice creates; either party can read; mentor updates status
+    match /matches/{matchId} {
+      allow read: if isAuth() && (
+        request.auth.uid == resource.data.apprenticeId ||
+        request.auth.uid == resource.data.mentorId
+      );
+      allow create: if isAuth() &&
+        request.auth.uid == request.resource.data.apprenticeId &&
+        request.resource.data.status == 'PENDING';
+      allow update: if isAuth() && (
+        request.auth.uid == resource.data.mentorId ||
+        (request.auth.uid == resource.data.apprenticeId &&
+          request.resource.data.status == 'CANCELLED')
+      );
+      allow delete: if false;
+    }
+
+    // Conversations: participants can read and write
+    match /conversations/{convId} {
+      allow read: if isAuth() && isParticipant(resource);
+      allow create: if isAuth() &&
+        request.auth.uid in request.resource.data.participantIds;
+      allow update: if isAuth() && isParticipant(resource);
+      allow delete: if false;
+
+      // Messages subcollection
+      match /messages/{msgId} {
+        allow read: if isAuth() && isParticipant(get(/databases/$(database)/documents/conversations/$(convId)));
+        allow create: if isAuth() &&
+          request.auth.uid == request.resource.data.senderId &&
+          isParticipant(get(/databases/$(database)/documents/conversations/$(convId)));
+        allow update: if false;
+        allow delete: if false;
+      }
+    }
+
+    // Learning paths: anyone authenticated can read
+    match /learningPaths/{pathId} {
+      allow read: if isAuth();
+      allow write: if false;
+
+      match /lessons/{lessonId} {
+        allow read: if isAuth();
+        allow write: if false;
+      }
+    }
+
+    // Progress: owner can read and write
+    match /progress/{progressId} {
+      allow read: if isAuth() && resource.data.userId == request.auth.uid;
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuth() && resource.data.userId == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // Reports: anyone authenticated can create; no reads
+    match /reports/{reportId} {
+      allow create: if isAuth() &&
+        request.resource.data.reporterId == request.auth.uid;
+      allow read: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}
